@@ -1,0 +1,424 @@
+FIT5217 - Natural Language Processing
+Assignment 1: N-gram Language Modeling & Linear Text
+Classification
+Monash University
+Total marks:100
+Weight:25% of final grade
+Submission:via Moodle in one ZIP file
+Late penalty:5% per day (max 7 days)
+Due:Tuesday, 14th April 2026, 11:59 PM
+Overview
+This assignment has three parts. It begins withData Understanding, followed byPart
+A, where you will build and evaluate a family of N-gram language models, and finally
+Part B, where you will build text classifiers. The Data Understanding section will help
+you prepare for Part B.
+About the dataset.
+Rather than working with raw text, you will work withinteger token IDs. Every
+word in every document has been replaced by a number. The vocabulary used for indexing
+was constructed from the training file and the test file used for classification task. Because
+the vocabulary is fixed, tokens that do not appear in it are mapped to a special<UNK>
+(unknown) token with ID0. As a result, you may encounter the token ID0in the
+validation file for words that were not present in the vocabulary. This means you will
+never see the actual words; instead, your input will always be a sequence of integers such
+as5 12 47 3 201 .... Take a look at the example below:
+Example: How we Preprocessed and Indexed
+Raw sentence:
+WOW!!! This Pizza is AMAZING!!! Visit https://pizza-world.com or
+email me at John.Doe99@example.com. I ate 3 slices!!!
+Cleaned tokens (after preprocessing):
+wow!! this pizza is amazing!! visit. or email me at . i ate
+slices!!!
+Indexed representation:
+15!! 8 47 3 91!! 210. 33 120 9 44 . 13 77 65!!!
+Note:The token ID0corresponds to the<UNK>(unknown) token and is used
+for words that do not appear in the vocabulary.
+What has already been cleaned for you.
+The raw documents were preprocessed before indexing, so you donotneed to clean
+the data yourself. The following have already been removed:
+•HTML tags and special characters (e.g.<b>,&amp;)
+•URLs and email addresses (e.g.www.example.com,user@mail.com)
+•Tokens containing digits (e.g.12.99,500mg,2nd)
+1
+What has not been removed.We have not removed the punctuation marks and
+hyphenated words likepre-processing.Stopwords(e.g.the,and,is) andrare words
+remain in the dataset. You should explore how these affect language model perplexity
+and classification accuracy as part of the assignment. To complete both parts you will be
+given four CSV files, summarised in Table 1.
+Table 1: Student Input Files
+File Columns Use for
+train indexed.csv RowId,TextIndexed,CategoryParts A and B
+validationindexed.csv RowId,TextIndexed,CategoryPart A and B
+test ngram indexed.csv RowId,TextIndexed,CategoryPart A only
+test classificationindexed.csv RowId,TextIndexed,Category(empty)Part B only
+Table 2: Every file will have the above three columns.
+Column Name Description
+RowId A unique identifier for each row or document in
+the dataset.
+TextIndexed The text document after indexing, where each
+word has been mapped to a unique numeric ID.
+The mapping between words and IDs is not pro-
+vided, so the numeric IDs should be converted to
+strings and treated as tokens representing words.
+Category Indicates the category to which the corresponding
+text document belongs.
+∗Important:Every section contains instructions on submission files and names, followed
+by an evaluation breakdown rubric, follow them closely. Towards the end you will find a
+checklist of all files you are required to submit; make sure you submit them all. All the
+best!
+2
+Data Understanding[15 marks]
+Complete all tasks below usingtrain indexed.csvonly, unless stated otherwise.
+DU1 Data Understanding(5 marks)
+Explore the structure and statistical properties of the training corpus. Produceat most
+three plotsto summarise the data; suitable choices include a histogram of token frequen-
+cies, a histogram of document lengths (tokens per document), or a bar chart of document
+counts per category. You must stateat least two observationsgrounded in your plots.
+Your observations should go beyond simple description and provide meaningful analysis of
+the data. You can explainwhythe observed patterns occur , discuss theirimplications
+for N-gram models(such as sparsity, the need for smoothing, or effects on perplexity),
+and consider theirimplications for classification(such as class imbalance, feature
+dominance, or document length bias).
+Evaluation(5 marks total)
+•3 marks — 1 mark each for three plots.
+•2 marks — Grounded explanations, 1 mark per observation (minimum of two
+required).
+DU2 Stopword Identification(5 marks)
+A stopword is a token that appears so frequently across the corpus that it carries little
+meaningful information. To identify stopwords from the training data, you can use two
+measures:
+Term Frequency (TF)is the proportion of times a token appears out of all tokens
+in the corpus. For example, if the corpus has 100,000 tokens and a token appears 500
+times, its TF is 500/100,000 = 0.5%.
+Document Frequency (DF)is the proportion of documents in which a token ap-
+pears at least once. For example, if there are 8,000 documents and a token appears in
+2,000 of them, its DF is 2,000/8,000 = 25%.
+Note:In practice, stopword detection is often based onInverse Document Frequency
+(IDF). A low IDF indicates that a token appears in many documents and is therefore less
+informative. We use DF directly here for simplicity and intuition, but the two approaches
+are equivalent, a high DF corresponds to a low IDF. Refer to this resource for a more
+detailed explanation of TF-IDF.
+Note that even without access to the actual words, the statistical characteristics of stop-
+words remain consistent. Tokens that are stopwords will exhibit the same distributional
+patterns regardless of whether you can decode them. This means you can identify stop-
+words purely from the token indices and their frequency statistics in the training data.
+Report a list of 40 stopword token IDs that you identified. Identifying stopwords is
+beneficial for a later task in this assignment. Compute both measures using the training
+data only.
+3
+Evaluation(5 marks total)
+•1 mark— Report the TF threshold you used and justify your choice.
+•1 mark— Report the DF (or IDF) threshold you used and justify your choice.
+•3 marks— Awarded based on the accuracy of your identified stopword token
+IDs against a reference stopword list.
+DU3 Collocation Discovery(5 marks)
+A collocation is a pair of tokens that co-occur more frequently than expected by chance
+(e.g.,“New York”,“anti-bacterial”). Since you are working with token IDs, the underlying
+words are not directly observable, so collocations must be identified statistically using the
+training corpus only. Report at least10 collocation pairsas token ID pairs. These
+collocations may later be used as features in the assignment. For further details on
+collocation detection methods, refer to: Manning & Sch¨ utze,Foundations of Statistical
+Natural Language Processing, Chapter 5.
+Evaluation(5 marks total)
+•2 marks— Clear explanation of the method and strategy used to identify
+collocations.
+•3 marks— Validity of the reported collocations, their statistical significance.
+*Important:Outputs for stopwords and collocations from the Data Understanding sec-
+tion must be submitted in the format specified in the fileDataunderstanding studentid.
+csv, wherestudentidshould be replaced with your actual student ID.
+Part A[65 marks]
+A1 N-gram Language Modeling(45 marks)
+Overview
+Implement four n-gram language models: MLE, Add-1 smoothing, Add-ksmoothing, and
+Kneser-Ney (KN) in your notebook. For MLE, Add-1, and Add-k, you must implement
+your own classes from scratch. Use ofnltk.lmisnot permittedfor these three models.
+For Kneser-Ney, you may usenltk.lm.KneserNeyInterpolateddirectly.
+All models must be trained ontrain indexed.csvonly. Evaluate all four models across
+all 20 categoriesusingvalidation indexed.csv, matching each model to its corre-
+sponding category only, i.e. a model trained onType 1must be validated onType 1
+documents only. The validation file may contain index0(<UNK>) for out-of-vocabulary
+tokens — this is expected and your models must handle it gracefully.
+Once you are satisfied with your models, evaluate them on the providedtest ngram -
+indexed.csvand report the perplexity of each model for each category. Submit your
+results as a CSV file namedperplexity comparison studentid.csvwith exactly 20
+data rows (one per category) plus a mean row, and columns corresponding to each of the
+four models following the format given below. You will also print out the comparison
+table to the output.
+4
+Output Requirements
+1. Console outputPrint a perplexity comparison table in the following format, where
+Add-kandKNreport results for the best-performing hyperparameter only:
+category MLE Add-1 Add-k(k=?) KN(d=?)
+Type_1 inf x x x
+Type_10 inf x x x
+...
+Mean inf x x x
+2. CSV fileWrite the same table to a CSV file namedperplexity comparison studentid.csv
+with the following columns exactly:
+category, MLE, Add-1, Add-k(k=<value>), KN(d=<value>)
+Implementation Requirements
+•All four models must be trainedper categoryusing the training data only. There
+are 20 categories in the dataset.
+•Before training, map all tokens with frequency below a threshold of your choice to
+<UNK>(index 0). Report and justify this threshold in your notebook.
+•For Add-ksmoothing, experiment with at least three values ofkand report results
+for the best-performing value. To be eligible for full marks, your best Add-kmodel
+must achieve aminimum perplexity reduction of 55% over Add-1 in at least
+5 categories:
+∆PPL(%) = PPLAdd-1 −PPL Add-k
+PPLAdd-1
+×100≥55%
+•For Kneser-Ney smoothing, experiment with at least three values of the discount
+parameterdand report results for the best-performing value. To be eligible for full
+marks, your best KN model must achieve aminimum perplexity reduction of
+18% over the best Add-kmodel in at least 5 categories:
+∆PPL(%) = PPLAdd-k −PPL KN
+PPLAdd-k
+×100≥18%
+•Perplexity must be evaluated on thematching categoryin the validation/test file.
+The model trained onType 1must be evaluated onType 1documents only, and so
+on.
+•You may choose any ordern∈ {1,2,3}but must use thesamenconsistently
+across all four models. Discuss the effect ofnon perplexity clearly in your report.
+5
+Submission
+File Contents Purpose
+perplexity comparison
+studentid.csv
+Per-category perplexity
+table for all four models
+at chosenn.
+Used to verify your reported re-
+sults.
+Columns must be exactly:category,MLE,Add-1,Add-k(k=<value>),KN(d=<value>).
+NLP Assignment1 -
+studentid.ipynb
+All code, experiments,
+and written analysis in
+clearly labelled sections
+matching the assign-
+ment specification
+Serves as your written report
+Include a Markdown cell at the top with your name, student ID, and a table of contents.
+Each model must begin with a clearly labelled Markdown heading. Observations must
+be in Markdown cells after the relevant output. All cells must be executed and visible.
+Evaluation(45 marks total)
+MLE(10 marks)
+•3 marks— Correctness of MLE logic, code clarity, and comments.
+•2 marks— Notebook readability and clarity of observations.
+•5 marks— MLE logic verified on the held-out test set.
+Add-1(10 marks)
+•3 marks— Correctness of Add-1 logic, code clarity, and comments.
+•2 marks— Notebook readability and interpretation of results.
+•5 marks— Add-1 logic verified on the held-out test set.
+Add-k(10 marks)
+•3 marks— Correctness of Add-klogic, code clarity, comments.
+•2 marks— Discussion ofktrade-offs and perplexity trends in the notebook
+report.
+•5 marks—≥55% perplexity reduction over Add-1 in at least 5 categories on
+the held-out test set.
+Kneser-Ney(10 marks)
+•3 marks— Correct use ofKneserNeyInterpolated, code clarity, and com-
+ments.
+•2 marks— Discussion ofdtrade-offs and comparison with Add-kin the note-
+book.
+•5 marks—≥18% perplexity reduction over Add-kmodel in at least 5 cate-
+gories on the held-out test set.
+Output(5 marks)
+•2 marks— Perplexity comparison table printed to the console in the correct
+format with all four models, per-category rows, and a mean row.
+•3 marks— CSV file submitted in the correct format with the correct filename
+perplexity comparison studentid.csvand exact column names.
+6
+A2 Catchphrase Insertion(20 marks)
+Large language models are now used by virtually everyone to generate text, raising a
+natural question: how do you leave your mark on what you create? In this task you will
+explore a small-scale version of text watermarking by embedding a secretcatchphrase
+into text generated by your n-gram model. Chooseone category( Type 1 or Type 2,..
+etc) from your dataset and perform all insertion and evaluation on documents from that
+category only. You may choose the n-gram order and model of your choice for this
+task, with justification. Observations must be clearly reported in your notebook with
+supporting statistics. You will demonstrate the this using Variations 1 and 2 below.
+Catchphrase selection(2 marks)
+Choose a catchphrase of three or more tokens that containsno stopwordsand whose
+tokens arestatistically rarein the training corpus. A trivially common phrase would not
+constitute a convincing watermark. For example, a phrase whose constituent bigrams each
+account for less than 30% of all bigrams starting with that context, i.e.P(w 2 |w 1)<0.30
+andP(w 3 |w 2)<0.20, could be considered rare. You may also use alternative statistical
+evidence such as low unigram frequency, high IDF, etc, to justify your selection. Since
+you are working with token indices rather than words, you will not be penalised for
+the semantic quality of the phrase, what matters is that you can demonstrate its rarity
+statistically using token counts.
+Variation 1 — Data-level insertion(6 marks)
+Modify thetraining dataso that the catchphrase becomes more probable under the
+learned n-gram model, for example by injecting the catchphrase into training documents
+to increase its observed n-gram counts. In no more than two sentences, explain how you
+modified the data and why this raises the catchphrase probability.
+Variation 2 — Model-level insertion(6 marks)
+Leave the training data unchanged and instead modify themodel or its sampling
+procedure, for example by biasing the next-token distribution toward catchphrase tokens
+or using forced insertion at fixed intervals. In no more than two sentences, explain what
+you changed and how it encourages catchphrase appearance.
+Video Submission(6 marks)
+Record a short 5-minutescreen-capture videowhile you generate text using your model
+in real time. At the start of the video, briefly explain in one sentence which variation
+you are demonstrating and how it works. Then proceed to show the generation live on
+screen. You will receive marks for this component regardless of whether the catchphrase
+appears in the generated output. Marks are based on the clarity of your explanation and
+the quality of your video.
+7
+Submission
+File Contents Purpose
+studentid video
+.mp4/.mov
+Screen-capture of live
+text generation with a
+one-sentence verbal ex-
+planation at the start
+Assessed for explanation clarity
+and video quality
+Face must be visible throughout. Do not fast forward. No AI enhancement permitted. No
+voiceover tools allowed. Your own live voice must be used throughout.
+Evaluation(20 marks total)
+Catchphrase Selection(2 marks)
+•2 marks— Catchphrase contains no stopwords and is statistically rare in the
+training corpus, and selection is justified with clear statistical evidence in the
+report i.e., .ipynb file.
+Variation 1: Data-level Insertion(6 marks)
+•4 marks— Correct implementation of data modification that demonstrably
+increases catchphrase n-gram counts, with a clear explanation in no more than
+two sentences.
+•2 marks— Catchphrase appears at least once in every 60 generated tokens.
+Variation 2: Model-level Insertion(6 marks)
+•4 marks— Correct implementation of model or sampling modification that
+encourages catchphrase appearance, with a clear explanation in no more than
+two sentences.
+•2 marks— Catchphrase appears at least once in every 60 generated tokens.
+Overall Quality(6 marks)
+•6 marks— Content Coverage and clarity of the screen-capture video submis-
+sion.
+Part B — Text Classification[20 marks]
+In this part, you will build and compare two text classification models that assign each doc-
+ument intest classification indexed.csvto one offive categories:Type 1,Type 2,
+Type 3,Type 4, andType 6. Train your models exclusively on the corresponding docu-
+ments intrain indexed.csv. Submit your predictions by filling in theCategorycolumn
+oftest classification indexed.csvand renaming the file totest classification -
+indexed studentid.csv.
+B1 Model Implementation(10 marks)
+You must implement and compare the following two classifiers:
+•Naive Bayes(5 marks)
+•Logistic Regression(5 marks)
+8
+For each model, address the following in your notebook:
+(a)Pre-processing:Describe any additional pre-processing steps applied to the in-
+dexed token sequences before feature extraction. Justify your choices.
+(b)Feature engineering:State which features you used (e.g. unigram counts, bi-
+gram features, document length). Discuss which features improved performance
+and which did not, supported by experimental evidence.
+(c)Comparison:Reportaccuracy,macro F1, andmicro F1for both models on a
+validation split held out fromtrain indexed.csv. Present per-category F1 scores,
+include a confusion matrix for each model, and discuss which model performs better
+and why.
+Evaluation(10 marks total)
+All justifications, feature engineering decisions, and analysis must be documented in
+your.ipynbnotebook using clearly written Markdown cells.
+Naive Bayes(5 marks)
+•2 marks— Correct implementation with clear justification of pre-processing
+and feature choices in the notebook.
+•3 marks— Accuracy, macro F1, micro F1, per-category F1 scores, and con-
+fusion matrix reported and discussed in the notebook.
+Logistic Regression(5 marks)
+•2 marks— Correct implementation with clear justification of pre-processing
+and feature choices in the notebook.
+•3 marks— Accuracy, macro F1, micro F1, per-category F1 scores, and con-
+fusion matrix reported with a reasoned comparison against Naive Bayes.
+B2 Predictions(10 marks)
+Apply yourbest-performing model(either Naive Bayes or Logistic Regression) to
+test classification indexed.csvand fill in theCategorycolumn with your predicted
+labels. Do not alter the row order, column order, or any other field. Marks are awarded
+based on macro F1 computed against the ground truth according to the scale mentioned
+in Evaluation below.
+Submission
+File Contents Purpose
+test classification
+indexed studentid.csv
+Categorycolumn filled
+with your predicted la-
+bels.
+Evaluated against ground truth for
+B.
+Do not alter row order, column order, or any other field. Only theCategorycolumn should
+be filled. Submit using your best-performing model only.
+9
+Evaluation(10 marks total)
+Predictions(10 marks)
+•5 marks— Macro F1<0.50 on the held-out ground truth.
+•6 marks— Macro F1≥0.50.
+•7–8 marks— Macro F1≥0.70.
+•9–10 marks— Macro F1≥0.80.
+Before submitting, confirm all of the following:
+□All filenames use your actual student ID in place ofstudentid.
+□NLP Assignment1 studentid.ipynbcontains all sections with clearly labelled
+Markdown headings matching the assignment specification.
+□All notebook cells are executed and outputs are visible.
+□Observations and justifications are written in Markdown cells, not in code com-
+ments.
+□The classification CSV file has only theCategorycolumn filled. No other fields
+have been altered.
+□The video is in.mp4or.wavformat, your face is visible, and no AI enhancement
+or voiceover tools were used.
+□If you make use of any new methods or technology in your assignment that has
+not been taught in your class already, then you will have to provide citations
+to these sources and also justify why you had to use them.
+10
+Submission Checklist
+File Section Notes
+Master Notebook
+□NLP Assignment1
+studentid.ipynb
+All sections Single notebook containing all
+code, experiments, and analysis
+for every section. All cells must
+be executed with outputs visible.
+Data Understanding
+□Data understanding
+studentid.csv
+DU1, DU2, DU3 All outputs from the Data Under-
+standing section in the specified
+format.
+Part A — N-gram Language Modeling
+□perplexity comparison
+studentid.csv
+A1 Per-category perplexity table for
+all four models. Columns must be
+exactly:category,MLE,Add-1,
+Add-k(k=?),KN(d=?).
+□studentid video.mp4
+or.mov
+A2 Screen-capture video (max 5 min-
+utes) of live text generation. Face
+must be visible. No AI enhance-
+ment or voiceover tools permit-
+ted.
+Part B — Text Classification
+□test classification
+indexed studentid.csv
+B2test classification indexed.csv
+with theCategorycolumn filled
+with predicted labels. Do not
+alter row order, column order, or
+any other field.
+Generative AI Declaration (if applicable)
+□AI declaration
+studentid.pdf
++ chat history
+All sections Required only if you used gen-
+erative AI tools at any point in
+this assignment. Submit the dec-
+laration and full chat history fol-
+lowing the format specified here.
+Failure to submit chat records
+when AI was used may result in
+cross-examination on your sub-
+mission.
+FIT5217 NLP Teaching Team·Monash University
+11
